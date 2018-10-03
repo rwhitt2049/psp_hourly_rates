@@ -108,6 +108,27 @@ def extract_price_per_kwh(df: pd.DataFrame, col_name) -> pd.DataFrame:
 
 @toolz.curry
 def add_price_start_time(df: pd.DataFrame, col_name) -> pd.DataFrame:
+    """
+    Add a start datetime for price such that:
+
+    current_price = df["price_dollar_per_kwh"][
+        df["price_start_datetime"] >= pd.Timestamp.now()
+        & df["price_end_datetime"] <= pd.Timestamp.now()
+    ]
+
+    The "date" column comes in and a datetime64[ns] datatype.
+    The "Time of Day (CT)" column is a string with the following format:
+
+    HH:MM [A|P]M - HH + 1:MM [A|P]M
+
+    ie
+
+    "12:00 AM - 1:00 AM"
+
+    Logic extracts the time string then combines it with the date to create
+    a datetime column
+
+    """
     start_dates = df["date"]
     start_times = (
         df["Time of Day (CT)"]
@@ -127,6 +148,27 @@ def add_price_start_time(df: pd.DataFrame, col_name) -> pd.DataFrame:
 
 @toolz.curry
 def add_price_end_time(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
+    """
+    Add an end datetime for price such that:
+
+    current_price = df["price_dollar_per_kwh"][
+        df["price_start_datetime"] >= pd.Timestamp.now()
+        & df["price_end_datetime"] <= pd.Timestamp.now()
+    ]
+
+    The "date" column comes in and a datetime64[ns] datatype.
+    The "Time of Day (CT)" column is a string with the following format:
+
+    HH:MM [A|P]M - HH + 1:MM [A|P]M
+
+    ie
+
+    12:00 AM - 1:00 AM
+
+    Logic extracts the time string then combines it with the date to create
+    a datetime column
+
+    """
     stop_dates = df["date"]
     stop_times = (
         df["Time of Day (CT)"]
@@ -157,7 +199,7 @@ def create_clean_hourly_energy_rate_data() -> pd.DataFrame:
         extract_price_per_kwh(col_name="price_dollar_per_kwh"),
         add_price_start_time(col_name="price_start_datetime"),
         add_price_end_time(col_name="price_end_datetime"),
-        lambda x: pd.DataFrame.drop(x, labels=["Time of Day (CT)", "Actual Price (Cents per kWh)", "date"], axis=1)
+        lambda x: pd.DataFrame.drop(x, labels=["Time of Day (CT)", "Actual Price (Cents per kWh)", "date"], axis=1),
     ]
 
     cleaned_data = toolz.pipe(raw_data, *cleaning_steps)
